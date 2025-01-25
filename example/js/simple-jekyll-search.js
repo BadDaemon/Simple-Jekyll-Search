@@ -1,6 +1,6 @@
 /*!
   * Simple-Jekyll-Search
-  * Copyright 2015-2020, Christian Fei
+  * Copyright 2015-2025, Christian Fei
   * Licensed under the MIT License.
   */
 
@@ -68,6 +68,9 @@ var _$FuzzySearchStrategy_5 = new FuzzySearchStrategy()
 
 function FuzzySearchStrategy () {
   this.matches = function (string, crit) {
+    if (string === null) {
+      return false
+    }
     return _$fuzzysearch_1(crit.toLowerCase(), string.toLowerCase())
   }
 }
@@ -79,13 +82,10 @@ var _$LiteralSearchStrategy_6 = new LiteralSearchStrategy()
 function LiteralSearchStrategy () {
   this.matches = function (str, crit) {
     if (!str) return false
-
     str = str.trim().toLowerCase()
-    crit = crit.trim().toLowerCase()
+    crit = crit.endsWith(' ') ? [crit.toLowerCase()] : crit.trim().toLowerCase().split(' ')
 
-    return crit.split(' ').filter(function (word) {
-      return str.indexOf(word) >= 0
-    }).length === crit.split(' ').length
+    return crit.filter(word => str.indexOf(word) >= 0).length === crit.length
   }
 }
 
@@ -182,7 +182,7 @@ function findMatches (data, crit, strategy, opt) {
 
 function findMatchesInObject (obj, crit, strategy, opt) {
   for (const key in obj) {
-    if (!isExcluded(obj[key], opt.exclude) && strategy.matches(obj[key], crit)) {
+    if (key !== 'query' && !isExcluded(obj[key], opt.exclude) && strategy.matches(obj[key], crit)) {
       return obj
     }
   }
@@ -311,7 +311,8 @@ var _$src_8 = {};
     limit: 10,
     fuzzy: false,
     debounceTime: null,
-    exclude: []
+    exclude: [],
+    onSearch: Function.prototype
   }
 
   let debounceTimerHandle
@@ -403,6 +404,8 @@ var _$src_8 = {};
     if (isValidQuery(query)) {
       emptyResultsContainer()
       render(_$Repository_4.search(query), query)
+
+      typeof options.onSearch === 'function' && options.onSearch.call()
     }
   }
 
